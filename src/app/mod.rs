@@ -31,12 +31,14 @@ mod bios;
 mod component;
 mod ec;
 
+static AMIDE: &'static str = concat!("\\", env!("BASEDIR"), "\\firmware\\amide.efi");
 static ECROM: &'static str = concat!("\\", env!("BASEDIR"), "\\firmware\\ec.rom");
 static EC2ROM: &'static str = concat!("\\", env!("BASEDIR"), "\\firmware\\ec2.rom");
 static FIRMWAREDIR: &'static str = concat!("\\", env!("BASEDIR"), "\\firmware");
 static FIRMWARENSH: &'static str = concat!("\\", env!("BASEDIR"), "\\res\\firmware.nsh");
 static FIRMWAREROM: &'static str = concat!("\\", env!("BASEDIR"), "\\firmware\\firmware.rom");
 static MESETTAG: &'static str = concat!("\\", env!("BASEDIR"), "\\firmware\\meset.tag");
+static SERIAL: &'static str = concat!("\\", env!("BASEDIR"), "\\serial");
 static SHELLEFI: &'static str = concat!("\\", env!("BASEDIR"), "\\res\\shell.efi");
 static SPLASHBMP: &'static str = concat!("\\", env!("BASEDIR"), "\\res\\splash.bmp");
 static UEFIFLASH: &'static str = concat!("\\", env!("BASEDIR"), "\\firmware\\uefiflash.efi");
