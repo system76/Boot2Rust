@@ -9,7 +9,7 @@ use std::fs::{find, load};
 use std::vars::{get_boot_item, get_boot_order, set_boot_item, set_boot_order};
 use uefi::status::{Error, Result};
 
-use super::{AMIDE, FIRMWAREDIR, FIRMWARENSH, FIRMWAREROM, SERIAL, UEFIFLASH, shell, Component};
+use super::{FIRMWAREDIR, FIRMWARENSH, FIRMWAREROM, UEFIFLASH, shell, Component};
 
 pub struct BiosComponent {
     bios_vendor: String,
@@ -105,23 +105,6 @@ impl BiosComponent {
             loop {}
         } else {
             println!("Failed to locate EC");
-        }
-    }
-
-    fn set_serial(&self, serial: &str) -> Result<()> {
-        if find(AMIDE).is_ok() {
-            let cmd = format!("{} /SS {}", AMIDE, serial);
-            let status = shell(&cmd)?;
-
-            if status == 0 {
-                Ok(())
-            } else {
-                println!("{} Set Serial Error: {}", self.name(), status);
-                Err(Error::DeviceError)
-            }
-        } else {
-            //TODO
-            Err(Error::NotFound)
         }
     }
 }
@@ -441,25 +424,6 @@ impl Component for BiosComponent {
             if status != 0 {
                 println!("{} Flash Error: {}", self.name(), status);
                 return Err(Error::DeviceError);
-            }
-        }
-
-        if let Ok(serial_vec) = load(SERIAL) {
-            match String::from_utf8(serial_vec) {
-                Ok(serial_str) => {
-                    let serial = serial_str.trim();
-                    match self.set_serial(&serial) {
-                        Ok(()) => {
-                            println!("Set serial to '{}'", serial);
-                        },
-                        Err(err) => {
-                            println!("Failed to set serial to '{}': {:?}", serial, err);
-                        }
-                    }
-                },
-                Err(err) => {
-                    println!("Failed to parse serial: {:?}", err);
-                }
             }
         }
 
