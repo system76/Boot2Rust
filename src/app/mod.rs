@@ -31,12 +31,14 @@ mod bios;
 mod component;
 mod ec;
 
+static AMIDETAG: &'static str = concat!("\\", env!("BASEDIR"), "\\firmware\\amide.tag");
 static ECROM: &'static str = concat!("\\", env!("BASEDIR"), "\\firmware\\ec.rom");
 static EC2ROM: &'static str = concat!("\\", env!("BASEDIR"), "\\firmware\\ec2.rom");
 static FIRMWAREDIR: &'static str = concat!("\\", env!("BASEDIR"), "\\firmware");
 static FIRMWARENSH: &'static str = concat!("\\", env!("BASEDIR"), "\\res\\firmware.nsh");
 static FIRMWAREROM: &'static str = concat!("\\", env!("BASEDIR"), "\\firmware\\firmware.rom");
 static MESETTAG: &'static str = concat!("\\", env!("BASEDIR"), "\\firmware\\meset.tag");
+static SERIAL: &'static str = concat!("\\", env!("BASEDIR"), "\\serial");
 static SHELLEFI: &'static str = concat!("\\", env!("BASEDIR"), "\\res\\shell.efi");
 static SPLASHBMP: &'static str = concat!("\\", env!("BASEDIR"), "\\res\\splash.bmp");
 static UEFIFLASH: &'static str = concat!("\\", env!("BASEDIR"), "\\firmware\\uefiflash.efi");
@@ -61,6 +63,18 @@ fn ac_connected() -> bool {
         (adp & 0x01) == 0x01
     } else {
         true
+    }
+}
+
+fn set_serial(serial: &str) -> Result<()> {
+    find(FIRMWARENSH)?;
+    let cmd = format!("{} {} serial {}", FIRMWARENSH, FIRMWAREDIR, serial);
+    let status = shell(&cmd)?;
+    if status == 0 {
+        Ok(())
+    } else {
+        println!("Set Serial Error: {}", status);
+        Err(Error::DeviceError)
     }
 }
 
@@ -216,6 +230,11 @@ fn inner() -> Result<()> {
         let c = if find(MESETTAG).is_ok() {
             // Skip enter if in manufacturing mode
             '\n'
+        } else if find(AMIDETAG).is_ok() {
+            // Skip enter if writing serial
+            components.clear();
+            validations.clear();
+            '\n'
         } else if find(UEFIFLASH).is_ok() {
             // Skip enter if flashing a meerkat
             if find(UEFIFLASHTAG).is_ok() {
@@ -255,6 +274,25 @@ fn inner() -> Result<()> {
             if success {
                 if let Err(err) = reset_dmi() {
                     println!("Failed to reset DMI: {:?}", err);
+                }
+
+                if let Ok(serial_vec) = load(SERIAL) {
+                    match String::from_utf8(serial_vec) {
+                        Ok(serial_str) => {
+                            let serial = serial_str.trim();
+                            match set_serial(&serial) {
+                                Ok(()) => {
+                                    println!("Set serial to '{}'", serial);
+                                },
+                                Err(err) => {
+                                    println!("Failed to set serial to '{}': {:?}", serial, err);
+                                }
+                            }
+                        },
+                        Err(err) => {
+                            println!("Failed to parse serial: {:?}", err);
+                        }
+                    }
                 }
 
                 let supported = get_os_indications_supported().unwrap_or(0);
